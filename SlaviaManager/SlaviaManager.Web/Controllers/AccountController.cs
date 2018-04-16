@@ -11,5 +11,6 @@ namespace SlaviaManager.Web.Controllers
     [Route("api/Account")]
     public class AccountController : Controller
     {
+
     }
 }

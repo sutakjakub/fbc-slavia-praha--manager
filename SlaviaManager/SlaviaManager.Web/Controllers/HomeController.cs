@@ -2,22 +2,39 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SlaviaManager.Web.Data;
+using SlaviaManager.Web.Entities;
 
 namespace SlaviaManager.Web.Controllers
 {
+    [Authorize(Policy = "ApiUser")]
+    [Route("api/[controller]/[action]")]
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly ClaimsPrincipal _caller;
+        private readonly ApplicationDbContext _appDbContext;
+
+        public HomeController(UserManager<AppUserEntity> userManager, ApplicationDbContext appDbContext, IHttpContextAccessor httpContextAccessor)
         {
-            return View();
+            _caller = httpContextAccessor.HttpContext.User;
+            _appDbContext = appDbContext;
         }
 
-        public IActionResult Error()
+        // GET api/dashboard/home
+        [HttpGet]
+        public async Task<IActionResult> Home()
         {
-            ViewData["RequestId"] = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
-            return View();
+            // retrieve the user info
+            //HttpContext.User
+            var userId = _caller.Claims.Single(c => c.Type == "id");
+
+            return new OkObjectResult($"User '{userId}' has permission :)");
         }
     }
 }
