@@ -117,7 +117,7 @@ namespace SlaviaManager.Web.Data
 
             if (!userManager.Users.Any(p => p.UserName == user.UserName))
             {
-                await userManager.CreateAsync(user);
+                await userManager.CreateAsync(user, "password");
                 if (await roleManager.RoleExistsAsync(user.UserName))
                 {
                     await userManager.AddToRoleAsync(user, user.UserName);
