@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SlaviaManager.Web.Auth;
 using SlaviaManager.Web.Entities;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,18 @@ namespace SlaviaManager.Web.Data
 {
     public static class SeedData
     {
-        public static List<string> Roles { get { return new List<string>() { "Administrator", "Management", "Coach", "Player", "Parent" }; } }
+        public static List<string> Roles
+        {
+            get
+            {
+                return new List<string>() {
+                    CustomRoles.Administrator,
+                    CustomRoles.Management,
+                    CustomRoles.Coach,
+                    CustomRoles.Player,
+                    CustomRoles.Parent };
+            }
+        }
 
         public static List<AppUserEntity> Users
         {
@@ -64,11 +76,11 @@ namespace SlaviaManager.Web.Data
             {
                 var list = new List<KeyValuePair<string, string>>();
 
-                list.Add(new KeyValuePair<string, string>("EditUserPermissions", "Administrator"));
-                list.Add(new KeyValuePair<string, string>("ReadOnlyUserPermissions", "Administrator"));
-                list.Add(new KeyValuePair<string, string>("ReadOnlyUserPermissions", "Management"));
-                list.Add(new KeyValuePair<string, string>("AcceptNewUser", "Management"));
-                list.Add(new KeyValuePair<string, string>("AcceptNewUser", "Administrator"));
+                list.Add(new KeyValuePair<string, string>(CustomClaims.EditUserPermissions, CustomRoles.Administrator));
+                list.Add(new KeyValuePair<string, string>(CustomClaims.ReadOnlyUserPermissions, CustomRoles.Administrator));
+                list.Add(new KeyValuePair<string, string>(CustomClaims.ReadOnlyUserPermissions, CustomRoles.Management));
+                list.Add(new KeyValuePair<string, string>(CustomClaims.AcceptNewUser, CustomRoles.Management));
+                list.Add(new KeyValuePair<string, string>(CustomClaims.AcceptNewUser, CustomRoles.Administrator));
 
                 return list;
             }
@@ -143,7 +155,7 @@ namespace SlaviaManager.Web.Data
             if (identityRole != null)
             {
                 var claims = await roleManager.GetClaimsAsync(identityRole);
-                if (!claims.Any(p => p.Value == claimToRole.Key))
+                if (!claims.Any(p => p.Type == claimToRole.Key))
                 {
                     await roleManager.AddClaimAsync(identityRole, new Claim(claimToRole.Key, ""));
                 }

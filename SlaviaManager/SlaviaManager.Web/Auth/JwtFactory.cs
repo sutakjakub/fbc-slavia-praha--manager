@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using SlaviaManager.Web.Data;
+using SlaviaManager.Web.Entities;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -12,23 +15,43 @@ namespace SlaviaManager.Web.Auth
     public class JwtFactory : IJwtFactory
     {
         private readonly JwtIssuerOptions _jwtOptions;
+        private readonly UserManager<AppUserEntity> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
-        public JwtFactory(IOptions<JwtIssuerOptions> jwtOptions)
+        public JwtFactory(IOptions<JwtIssuerOptions> jwtOptions, UserManager<AppUserEntity> userManager, RoleManager<IdentityRole> roleManager)
         {
             _jwtOptions = jwtOptions.Value;
             ThrowIfInvalidOptions(_jwtOptions);
+            this._userManager = userManager;
+            this._roleManager = roleManager;
         }
 
         public async Task<string> GenerateEncodedToken(string userName, ClaimsIdentity identity)
         {
-            var claims = new[]
-         {
-                 new Claim(JwtRegisteredClaimNames.Sub, userName),
-                 new Claim(JwtRegisteredClaimNames.Jti, await _jwtOptions.JtiGenerator()),
-                 new Claim(JwtRegisteredClaimNames.Iat, ToUnixEpochDate(_jwtOptions.IssuedAt).ToString(), ClaimValueTypes.Integer64),
-                 identity.FindFirst(JwtConstants.Strings.JwtClaimIdentifiers.Rol),
-                 identity.FindFirst(JwtConstants.Strings.JwtClaimIdentifiers.Id)
-             };
+            var claims = new List<Claim>();
+            //basic claims
+            claims.Add(new Claim(JwtRegisteredClaimNames.Sub, userName));
+            claims.Add(new Claim(JwtRegisteredClaimNames.Jti, await _jwtOptions.JtiGenerator()));
+            claims.Add(new Claim(JwtRegisteredClaimNames.Iat, ToUnixEpochDate(_jwtOptions.IssuedAt).ToString(), ClaimValueTypes.Integer64));
+            claims.Add(identity.FindFirst(JwtConstants.Strings.JwtClaimIdentifiers.Id));
+
+            var user = await _userManager.FindByNameAsync(userName);
+            var userClaims = await _userManager.GetClaimsAsync(user);
+            var userRoles = await _userManager.GetRolesAsync(user);
+            claims.AddRange(userClaims);
+            foreach (var userRole in userRoles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, userRole));
+                var role = await _roleManager.FindByNameAsync(userRole);
+                if (role != null)
+                {
+                    var roleClaims = await _roleManager.GetClaimsAsync(role);
+                    foreach (Claim roleClaim in roleClaims)
+                    {
+                        claims.Add(roleClaim);
+                    }
+                }
+            }
 
             // Create the JWT security token and encode it.
             var jwt = new JwtSecurityToken(
@@ -44,13 +67,35 @@ namespace SlaviaManager.Web.Auth
             return encodedJwt;
         }
 
-        public ClaimsIdentity GenerateClaimsIdentity(string userName, string id)
+        public async Task<ClaimsIdentity> GenerateClaimsIdentity(string userName, string id)
         {
-            return new ClaimsIdentity(new GenericIdentity(userName, "Token"), new[]
+            var user = await _userManager.FindByIdAsync(id);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            List<Claim> claimsResult = new List<Claim>();
+            claimsResult.Add(new Claim(JwtConstants.Strings.JwtClaimIdentifiers.Id, id));
+            //claimsResult.Add(new Claim(JwtConstants.Strings.JwtClaimIdentifiers.Rol, JwtConstants.Strings.JwtClaims.ApiAccess));
+
+            IList<Claim> claims;
+            foreach (var role in roles)
             {
-                new Claim(JwtConstants.Strings.JwtClaimIdentifiers.Id, id),
-                new Claim(JwtConstants.Strings.JwtClaimIdentifiers.Rol, JwtConstants.Strings.JwtClaims.ApiAccess)
-            });
+                if (!claimsResult.Any(p => p.Value == role))
+                {
+                    claims = await _roleManager.GetClaimsAsync(new IdentityRole(role));
+                    foreach (var claim in claims)
+                    {
+                        if (!claimsResult.Any(p => p.Value == claim.Type))
+                        {
+                            claimsResult.Add(new Claim(JwtConstants.Strings.JwtClaimIdentifiers.Rol, claim.Type));
+                        }
+                    }
+
+                    //claimsResult.Add(new Claim("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", role));
+                    claimsResult.Add(new Claim(JwtConstants.Strings.JwtClaimIdentifiers.Rol, role));
+                }
+            }
+
+            return new ClaimsIdentity(new GenericIdentity(userName, "Token"), claimsResult);
         }
 
         /// <returns>Date converted to seconds since Unix epoch (Jan 1, 1970, midnight UTC).</returns>

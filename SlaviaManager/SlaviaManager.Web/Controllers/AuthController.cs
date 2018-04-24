@@ -61,7 +61,7 @@ namespace SlaviaManager.Web.Controllers
             // check the credentials
             if (await _userManager.CheckPasswordAsync(userToVerify, password))
             {
-                return await Task.FromResult(_jwtFactory.GenerateClaimsIdentity(userName, userToVerify.Id));
+                return await _jwtFactory.GenerateClaimsIdentity(userName, userToVerify.Id);
             }
 
             // Credentials are invalid, or account doesn't exist

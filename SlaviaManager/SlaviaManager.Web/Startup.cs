@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -44,7 +45,7 @@ namespace SlaviaManager.Web
                 options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"),
               b => b.MigrationsAssembly("SlaviaManager.Web")));
 
-            services.AddSingleton<IJwtFactory, JwtFactory>();
+            services.AddScoped<IJwtFactory, JwtFactory>();
             services.TryAddTransient<IHttpContextAccessor, HttpContextAccessor>();
 
             // jwt wire up
@@ -90,7 +91,14 @@ namespace SlaviaManager.Web
             // api user claim policy
             services.AddAuthorization(options =>
             {
-                options.AddPolicy("ApiUser", policy => policy.RequireClaim(JwtConstants.Strings.JwtClaimIdentifiers.Rol, JwtConstants.Strings.JwtClaims.ApiAccess));
+                options.AddPolicy(CustomRoles.Administrator, policy => policy.RequireRole(CustomRoles.Administrator));
+                options.AddPolicy(CustomRoles.Management, policy => policy.RequireRole(CustomRoles.Management));
+                options.AddPolicy(CustomRoles.Coach, policy => policy.RequireRole(CustomRoles.Coach));
+                options.AddPolicy(CustomRoles.Player, policy => policy.RequireRole(CustomRoles.Player));
+                options.AddPolicy(CustomRoles.Parent, policy => policy.RequireRole(CustomRoles.Parent));
+                options.AddPolicy(CustomClaims.AcceptNewUser, policy => policy.RequireClaim(CustomClaims.AcceptNewUser));
+                options.AddPolicy(CustomClaims.EditUserPermissions, policy => policy.RequireClaim(CustomClaims.EditUserPermissions));
+                options.AddPolicy(CustomClaims.ReadOnlyUserPermissions, policy => policy.RequireClaim(CustomClaims.ReadOnlyUserPermissions));
             });
 
             // add identity
@@ -142,32 +150,6 @@ namespace SlaviaManager.Web
             app.UseDefaultFiles();
             app.UseStaticFiles();
             app.UseMvc();
-
-            //if (env.IsDevelopment())
-            //{
-            //    app.UseDeveloperExceptionPage();
-            //    app.UseWebpackDevMiddleware(new WebpackDevMiddlewareOptions
-            //    {
-            //        HotModuleReplacement = true
-            //    });
-            //}
-            //else
-            //{
-            //    app.UseExceptionHandler("/Home/Error");
-            //}
-
-            //app.UseStaticFiles();
-
-            //app.UseMvc(routes =>
-            //{
-            //    routes.MapRoute(
-            //        name: "default",
-            //        template: "{controller=Home}/{action=Index}/{id?}");
-
-            //    routes.MapSpaFallbackRoute(
-            //        name: "spa-fallback",
-            //        defaults: new { controller = "Home", action = "Index" });
-            //});
         }
     }
 }

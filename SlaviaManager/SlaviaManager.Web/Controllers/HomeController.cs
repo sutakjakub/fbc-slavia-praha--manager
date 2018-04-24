@@ -8,12 +8,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SlaviaManager.Web.Auth;
 using SlaviaManager.Web.Data;
 using SlaviaManager.Web.Entities;
 
 namespace SlaviaManager.Web.Controllers
 {
-    [Authorize(Policy = "ApiUser")]
+    [Authorize(Roles = CustomRoles.Management)]
     [Route("api/[controller]/[action]")]
     public class HomeController : Controller
     {
@@ -27,6 +28,7 @@ namespace SlaviaManager.Web.Controllers
         }
 
         // GET api/dashboard/home
+        [Authorize(Policy = CustomClaims.EditUserPermissions)]
         [HttpGet]
         public async Task<IActionResult> Home()
         {
