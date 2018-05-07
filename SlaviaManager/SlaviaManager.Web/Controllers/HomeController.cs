@@ -14,29 +14,40 @@ using SlaviaManager.Web.Entities;
 
 namespace SlaviaManager.Web.Controllers
 {
-    [Authorize(Roles = CustomRoles.Management)]
-    [Route("api/[controller]/[action]")]
+    //[Authorize(Roles = CustomRoles.Management)]
+    //[Route("api/[controller]/[action]")]
     public class HomeController : Controller
     {
-        private readonly ClaimsPrincipal _caller;
-        private readonly ApplicationDbContext _appDbContext;
+        //private readonly ClaimsPrincipal _caller;
+        //private readonly ApplicationDbContext _appDbContext;
 
-        public HomeController(UserManager<AppUserEntity> userManager, ApplicationDbContext appDbContext, IHttpContextAccessor httpContextAccessor)
-        {
-            _caller = httpContextAccessor.HttpContext.User;
-            _appDbContext = appDbContext;
-        }
+        //public HomeController(UserManager<AppUserEntity> userManager, ApplicationDbContext appDbContext, IHttpContextAccessor httpContextAccessor)
+        //{
+        //    _caller = httpContextAccessor.HttpContext.User;
+        //    _appDbContext = appDbContext;
+        //}
 
         // GET api/dashboard/home
-        [Authorize(Policy = CustomClaims.EditUserPermissions)]
-        [HttpGet]
-        public async Task<IActionResult> Home()
-        {
-            // retrieve the user info
-            //HttpContext.User
-            var userId = _caller.Claims.Single(c => c.Type == "id");
+        //[Authorize(Policy = CustomClaims.EditUserPermissions)]
+        //[HttpGet]
+        //public async Task<IActionResult> Home()
+        //{
+        //    // retrieve the user info
+        //    //HttpContext.User
+        //    var userId = _caller.Claims.Single(c => c.Type == "id");
 
-            return new OkObjectResult($"User '{userId}' has permission :)");
+        //    return new OkObjectResult($"User '{userId}' has permission :)");
+        //}
+
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        public IActionResult Error()
+        {
+            ViewData["RequestId"] = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+            return View();
         }
     }
 }
